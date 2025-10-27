@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Grayscale Disabler",
+  "name": "Colorful World",
   "version": "1.0",
   "description": "Disables all grayscale CSS filters on a page.",
   "permissions": [

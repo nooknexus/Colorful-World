@@ -25,30 +25,30 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 // The core function to inject or remove CSS
 function toggleGrayscaleInTab(tabId, enabled) {
-  chrome.scripting.executeScript({
-    target: { tabId: tabId },
-    func: (isEnabled) => {
-      const styleId = 'grayscale-disabler-style-sheet';
-      let styleSheet = document.getElementById(styleId);
+  // Manifest V2 / Firefox-compatible injection using chrome.tabs.executeScript
+  // Build a small IIFE string that runs in the page context.
+  const code = `(function(isEnabled){
+    const styleId = 'grayscale-disabler-style-sheet';
+    let styleSheet = document.getElementById(styleId);
 
-      if (isEnabled) {
-        if (styleSheet) return; // Already injected
+    if (isEnabled) {
+      if (styleSheet) return;
 
-        styleSheet = document.createElement('style');
-        styleSheet.id = styleId;
-        styleSheet.innerHTML = `
-          html, body, img, video, figure {
-            filter: none !important;
-            -webkit-filter: none !important;
-          }
-        `;
-        document.head.appendChild(styleSheet);
-      } else {
-        if (styleSheet) {
-          styleSheet.remove();
-        }
+      styleSheet = document.createElement('style');
+      styleSheet.id = styleId;
+      styleSheet.innerHTML = 'html, body, img, video, figure { filter: none !important; -webkit-filter: none !important; }';
+      document.head.appendChild(styleSheet);
+    } else {
+      if (styleSheet) {
+        styleSheet.remove();
       }
-    },
-    args: [enabled]
-  });
+    }
+  })(${JSON.stringify(enabled)});`;
+
+  try {
+    chrome.tabs.executeScript(tabId, { code: code });
+  } catch (e) {
+    // Fallback: if API signature differs, try without tabId
+    try { chrome.tabs.executeScript({ code: code }); } catch (err) { console.error('executeScript failed', err); }
+  }
 }
